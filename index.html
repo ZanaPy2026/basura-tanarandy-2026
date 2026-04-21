@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Listado de recolección de basura – Tañarandy 2026</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+    }
+    .box {
+      max-width: 900px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+    button {
+      padding: 6px 12px;
+      margin: 8px 0;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border-bottom: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+    }
+    input {
+      width: 100%;
+      padding: 4px;
+    }
+    .total {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h2>Listado de recolección de basura – Tañarandy 2026</h2>
+    <p>Monto mensual: <b>15.000 Gs</b></p>
+
+    <button id="btnAgregar">Agregar</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Monto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="lista"></tbody>
+    </table>
+
+    <div class="total">
+      Total: <span id="total">0</span> Gs
+    </div>
+  </div>
+
+  <!-- ✅ FIREBASE SDK (COMPAT, NO MODULE) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.jsscript src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Configuración de Firebase (la tuya)
+    firebase.initializeApp({
+      apiKey: "AIzaSyCiBSVb7fxLpwDRtpDCJztJ0GQ725HCPY",
+      authDomain: "basura-tanarandy-2026.firebaseapp.com",
+      projectId: "basura-tanarandy-2026"
+    });
+
+    const db = firebase.firestore();
+    const ref = db.collection("basura").doc("2026");
+
+    const MONTO = 15000;
+
+    const lista = document.getElementById("lista");
+    const totalEl = document.getElementById("total");
+    const btnAgregar = document.getElementById("btnAgregar");
+
+    function render(datos) {
+      lista.innerHTML = "";
+      let total = 0;
+
+      (datos.enero || []).forEach((u, i) => {
+        total += u.monto;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <input value="${u.nombre || ""}" 
+                   onchange="editarNombre(${i}, this.value)">
+          </td>
+          <td>${u.monto}</td>
+          <td>
+            <button onclick="eliminar(${i})">X</button>
+          </td>
+        `;
+        lista.appendChild(tr);
+      });
+
+      totalEl.textContent = total;
+    }
+
+    // Funciones globales (necesarias para los onclick inline)
+    function agregar() {
+      ref.get().then(doc => {
+        const data = doc.exists ? doc.data() : { enero: [] };
+        data.enero.push({ nombre: "", monto: MONTO });
+        ref.set(data);
+      });
+    }
+
+    function editarNombre(index, valor) {
+      ref.get().then(doc => {
+        const data = doc.data();
+        data.enero[index].nombre = valor;
+        ref.set(data);
+      });
+    }
+
+    function eliminar(index) {
+      ref.get().then(doc => {
+        const data = doc.data();
+        data.enero.splice(index, 1);
+        ref.set(data);
+      });
+    }
+
+    // Botón
+    btnAgregar.onclick = agregar;
+
+    // Tiempo real
+    ref.onSnapshot(doc => {
+      if (doc.exists) {
+        render(doc.data());
+      } else {
+        ref.set({ enero: [] });
+      }
+    });
+  </script>
+</body>
+</html>
+``
