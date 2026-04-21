@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Listado recolección de basura compañía Ta ñarandy - Año 2026</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#121b2f;
+      --muted:#95a3c7;
+      --text:#e8efff;
+      --line:#263252;
+      --accent:#4da3ff;
+      --good:#2ecc71;
+      --bad:#ff5a6b;
+    }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #070c18, var(--bg));
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1100px;
+      margin: 22px auto 60px;
+      padding: 0 16px;
+    }
+    header{
+      background: rgba(18,27,47,.75);
+      border:1px solid rgba(38,50,82,.9);
+      border-radius:14px;
+      padding: 18px 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.25);
+    }
+    header h1{
+      margin:0 0 6px;
+      font-size: 20px;
+      letter-spacing:.2px;
+      text-align:center;
+    }
+    header p{
+      margin:0;
+      text-align:center;
+      color:var(--muted);
+      font-size: 13px;
+    }
+
+    .month{
+      margin-top:14px;
+      background: rgba(18,27,47,.75);
+      border:1px solid rgba(38,50,82,.9);
+      border-radius:14px;
+      padding: 14px;
+    }
+    .month h2{
+      margin:0 0 10px;
+      font-size: 16px;
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .badge{
+      border:1px solid rgba(77,163,255,.45);
+      color:var(--accent);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size: 12px;
+      white-space:nowrap;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      overflow:hidden;
+      border-radius: 10px;
+      border:1px solid var(--line);
+      background: rgba(9,14,28,.35);
+    }
+    thead th{
+      position: sticky;
+      top:0;
+      background: rgba(18,27,47,.95);
+      z-index: 1;
+    }
+    th, td{
+      padding: 10px 8px;
+      border-bottom:1px solid var(--line);
+      font-size: 13px;
+      text-align:left;
+      vertical-align:middle;
+    }
+    td small{ color:var(--muted); }
+    .actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .btn{
+      cursor:pointer;
+      background: rgba(77,163,255,.14);
+      border:1px solid rgba(77,163,255,.35);
+      color: var(--accent);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .btn.secondary{
+      background: rgba(149,163,199,.12);
+      border:1px solid rgba(149,163,199,.25);
+      color: var(--muted);
+    }
+    .btn.danger{
+      background: rgba(255,90,107,.10);
+      border:1px solid rgba(255,90,107,.30);
+      color: #ff9aa3;
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap:10px;
+      margin: 12px 0 2px;
+    }
+    .stat{
+      border:1px solid var(--line);
+      background: rgba(9,14,28,.25);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .stat .k{
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .stat .v{
+      font-size: 16px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .paid{
+      accent-color: var(--good);
+    }
+    .debt{
+      accent-color: var(--bad);
+    }
+
+    .footnote{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 14px;
+      text-align:center;
+    }
+
+    @media (max-width: 900px){
+      .summary{ grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Listado de recolección de basura — Compañía Tañarandy — Año 2026</h1>
+      <p>Monto mensual: <b>10.000 GS</b> por usuario. Marca <b>Pagado</b> o <b>Deuda</b>. Los totales se calculan automáticamente.</p>
+    </header>
+
+    <div id="months"></div>
+
+    <div class="footnote">
+      Se guarda en tu navegador (localStorage). Si limpiás el navegador, se perderá el registro.
+    </div>
+  </div>
+
+  <script>
+    const MONTO_MENSUAL = 10000; // GS
+    const MESES = [
+      "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+    ];
+
+    // Helpers
+    const fmtGS = (n) => {
+      try {
+        return new Intl.NumberFormat("es-PY").format(n) + " GS";
+      } catch {
+        return n + " GS";
+      }
+    };
+
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    function loadState(){
+      const raw = localStorage.getItem("basura_tañarandy_2026");
+      if (!raw) return {};
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+
+    function saveState(state){
+      localStorage.setItem("basura_tañarandy_2026", JSON.stringify(state));
+    }
+
+    function createRow(mesKey, rowId, data){
+      const tr = document.createElement("tr");
+      tr.dataset.rowId = rowId;
+
+      // Nombre y Apellido
+      const tdNombre = document.createElement("td");
+      const inpNombre = document.createElement("input");
+      inpNombre.type = "text";
+      inpNombre.placeholder = "Nombre y Apellido";
+      inpNombre.value = data?.nombre ?? "";
+      inpNombre.style.width = "100%";
+      inpNombre.dataset.field = "nombre";
+      tdNombre.appendChild(inpNombre);
+
+      // Teléfono
+      const tdTel = document.createElement("td");
+      const inpTel = document.createElement("input");
+      inpTel.type = "text";
+      inpTel.placeholder = "Número de teléfono";
+      inpTel.value = data?.telefono ?? "";
+      inpTel.style.width = "100%";
+      inpTel.inputMode = "tel";
+      inpTel.dataset.field = "telefono";
+      tdTel.appendChild(inpTel);
+
+      // Estado pagado/deuda
+      const tdEstado = document.createElement("td");
+      tdEstado.style.whiteSpace = "nowrap";
+
+      const labelPaid = document.createElement("label");
+      labelPaid.className = "paid";
+      labelPaid.style.marginRight = "12px";
+      const radioPaid = document.createElement("input");
+      radioPaid.type = "radio";
+      radioPaid.name = `estado_${mesKey}_${rowId}`;
+      radioPaid.value = "pagado";
+      radioPaid.dataset.field = "estado";
+      if ((data?.estado ?? "pagado") === "pagado") radioPaid.checked = true;
+      labelPaid.appendChild(radioPaid);
+      labelPaid.appendChild(documentText(" Pagado"));
+
+      const labelDebt = document.createElement("label");
+      labelDebt.className = "debt";
+      const radioDebt = document.createElement("input");
+      radioDebt.type = "radio";
+      radioDebt.name = `estado_${mesKey}_${rowId}`;
+      radioDebt.value = "deuda";
+      radioDebt.dataset.field = "estado";
+      if ((data?.estado) === "deuda") radioDebt.checked = true;
+      labelDebt.appendChild(radioDebt);
+      labelDebt.appendChild(documentText(" Deuda"));
+
+      tdEstado.appendChild(labelPaid);
+      tdEstado.appendChild(labelDebt);
+
+      // Monto fila (solo informativo)
+      const tdMonto = document.createElement("td");
+      tdMonto.innerHTML = `<small>${fmtGS(MONTO_MENSUAL)} / usuario</small>`;
+
+      // Acciones
+      const tdAcc = document.createElement("td");
+      tdAcc.style.whiteSpace = "nowrap";
+
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn danger";
+      btnDel.type = "button";
+      btnDel.textContent = "Eliminar";
+      btnDel.addEventListener("click", () => {
+        // Marcar como eliminado en estado
+        removeRowFromState(mesKey, rowId);
+        tr.remove();
+        updateMonthSummary(mesKey);
+      });
+      tdAcc.appendChild(btnDel);
+
+      tr.appendChild(tdNombre);
+      tr.appendChild(tdTel);
+      tr.appendChild(tdEstado);
+      tr.appendChild(tdMonto);
+      tr.appendChild(tdAcc);
+
+      // Evento para recalcular
+      [inpNombre, inpTel, radioPaid, radioDebt].forEach(el => {
+        el.addEventListener("input", () => {
+          // guardar cambios
+          persistMonthRow(mesKey, rowId, tr);
+          updateMonthSummary(mesKey);
+        });
+        el.addEventListener("change", () => {
+          persistMonthRow(mesKey, rowId, tr);
+          updateMonthSummary(mesKey);
+        });
+      });
+
+      return tr;
+    }
+
+    function documentText(txt){
+      return document.createTextNode(txt);
+    }
+
+    function getMonthState(state, mesKey){
+      if (!state[mesKey]) state[mesKey] = { nextId: 1, rows: {} };
+      return state[mesKey];
+    }
+
+    let appState = loadState();
+
+    function ensureMonthDOM(mesKey){
+      const host = document.getElementById("months");
+      const monthEl = document.getElementById(`month_${mesKey}`);
+      if (monthEl) return;
+
+      const monthName = mesKey.charAt(0).toUpperCase() + mesKey.slice(1);
+      const m = getMonthState(appState, mesKey);
+      // Contenedor
+      const wrap = document.createElement("section");
+      wrap.className = "month";
+      wrap.id = `month_${mesKey}`;
+
+      wrap.innerHTML = `
+        <h2>
+          <span>${monthName}</span>
+          <span class="badge">Monto mensual: ${fmtGS(MONTO_MENSUAL)}</span>
+        </h2>
+
+        <div class="actions">
+          <button class="btn" type="button" data-add="${mesKey}">+ Agregar usuario</button>
+          <button class="btn secondary" type="button" data-clear="${mesKey}">Limpiar mes</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:220px;">Nombre y Apellido</th>
+              <th style="min-width:170px;">Teléfono</th>
+              <th style="min-width:180px;">Estado</th>
+              <th style="width:170px;">Monto</th>
+              <th style="width:140px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody_${mesKey}"></tbody>
+        </table>
+
+        <div class="summary" id="summary_${mesKey}">
+          <div class="stat"><div class="k">Cantidad de usuarios</div><div class="v" data-kpi="totalUsers">0</div></div>
+          <div class="stat"><div class="k">Pagados</div><div class="v" data-kpi="paidCount">0</div></div>
+          <div class="stat"><div class="k">Adeudados</div><div class="v" data-kpi="debtCount">0</div></div>
+          <div class="stat"><div class="k">Total monto pagado</div><div class="v" data-kpi="paidAmount">${fmtGS(0)}</div></div>
+          <div class="stat"><div class="k">Total monto sin pagar</div><div class="v" data-kpi="debtAmount">${fmtGS(0)}</div></div>
+        </div>
+      `;
+      host.appendChild(wrap);
+
+      // Events botones
+      wrap.querySelector(`[data-add="${mesKey}"]`).addEventListener("click", () => {
+        const newId = m.nextId++;
+        // persistir fila vacía
+        m.rows[String(newId)] = { nombre: "", telefono: "", estado: "pagado" };
+        saveState(appState);
+        const tbody = document.getElementById(`tbody_${mesKey}`);
+        const tr = createRow(mesKey, newId, m.rows[String(newId)]);
+        tbody.appendChild(tr);
+        updateMonthSummary(mesKey);
+      });
+
+      wrap.querySelector(`[data-clear="${mesKey}"]`).addEventListener("click", () => {
+        if (!confirm(`¿Seguro que querés limpiar el mes de ${monthName}?`)) return;
+        appState[mesKey] = { nextId: 1, rows: {} };
+        saveState(appState);
+        renderMonthRows(mesKey);
+        updateMonthSummary(mesKey);
+      });
+
+      // Render existing rows
+      renderMonthRows(mesKey);
+      updateMonthSummary(mesKey);
+    }
+
+    function renderMonthRows(mesKey){
+      ensureMonthDOM(mesKey); // crea contenedor si no existe
+      const tbody = document.getElementById(`tbody_${mesKey}`);
+      tbody.innerHTML = "";
+      const m = getMonthState(appState, mesKey);
+
+      const rowIds = Object.keys(m.rows).sort((a,b)=>Number(a)-Number(b));
+      rowIds.forEach(id => {
+        const tr = createRow(mesKey, Number(id), m.rows[id]);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function persistMonthRow(mesKey, rowId, tr){
+      const m = getMonthState(appState, mesKey);
+      const rowKey = String(rowId);
+
+      const nombre = $('[data-field="nombre"]', tr)?.value ?? "";
+      const telefono = $('[data-field="telefono"]', tr)?.value ?? "";
+      const estadoEl = $$(`input[name="estado_${mesKey}_${rowId}"]`, tr).find(r => r.checked);
+      const estado = estadoEl ? estadoEl.value : "pagado";
+
+      m.rows[rowKey] = { nombre, telefono, estado };
+      saveState(appState);
+    }
+
+    function removeRowFromState(mesKey, rowId){
+      const m = getMonthState(appState, mesKey);
+      delete m.rows[String(rowId)];
+      saveState(appState);
+    }
+
+    function updateMonthSummary(mesKey){
+      const m = getMonthState(appState, mesKey);
+      const summary = document.getElementById(`summary_${mesKey}`);
+      if (!summary) return;
+
+      const rowIds = Object.keys(m.rows);
+      const users = rowIds.length;
+
+      let paidCount = 0, debtCount = 0;
+      let paidAmount = 0, debtAmount = 0;
+
+      rowIds.forEach(id => {
+        const r = m.rows[id];
+        const estado = r?.estado ?? "pagado";
+        if (estado === "pagado"){
+          paidCount++;
+          paidAmount += MONTO_MENSUAL;
+        } else {
+          debtCount++;
+          debtAmount += MONTO_MENSUAL;
+        }
+      });
+
+      summary.querySelector('[data-kpi="totalUsers"]').textContent = users;
+      summary.querySelector('[data-kpi="paidCount"]').textContent = paidCount;
+      summary.querySelector('[data-kpi="debtCount"]').textContent = debtCount;
+      summary.querySelector('[data-kpi="paidAmount"]').textContent = fmtGS(paidAmount);
+      summary.querySelector('[data-kpi="debtAmount"]').textContent = fmtGS(debtAmount);
+    }
+
+    function mesKeyFromName(name){
+      // enero -> enero, febrero -> febrero ... (simple)
+      return name.toLowerCase();
+    }
+
+    // Inicializar: crear todas las secciones mes por mes
+    const months = document.getElementById("months");
+    MESES.forEach((mn) => ensureMonthDOM(mesKeyFromName(mn)));
+
+  </script>
+</body>
+</html>
