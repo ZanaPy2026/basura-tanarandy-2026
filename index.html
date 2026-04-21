@@ -2,8 +2,8 @@
 <html lang="es">  
 <head>  
   <meta charset="UTF-8" />  
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>  
-  <title>Listado de recolección de basura compañía Tañarandy — Año 2026</title>  
+  <meta name="viewport" content="width=device-width, initial-scale=1" />  
+  <title>Listado de recolección de basura — Compañía Tañarandy — Año 2026</title>  
 
   <style>  
     :root{  
@@ -20,7 +20,6 @@
     }  
 
     *{ box-sizing:border-box; }  
-
     body{  
       margin:0;  
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;  
@@ -86,7 +85,7 @@
       white-space:nowrap;  
     }  
 
-    .actions{  
+    .controls{  
       display:flex;  
       gap:10px;  
       align-items:center;  
@@ -95,6 +94,23 @@
       margin: 10px 0 10px;  
     }  
 
+    .field{  
+      flex: 1 1 auto;  
+      min-width: 220px;  
+    }  
+
+    input[type="text"]{  
+      width:100%;  
+      border-radius: 10px;  
+      border: 1px solid rgba(38,50,82,.9);  
+      background: rgba(7,12,24,.45);  
+      color: var(--text);  
+      padding: 10px 10px;  
+      outline: none;  
+      font-size: 13px;  
+    }  
+    input[type="text"]::placeholder{ color: rgba(149,163,199,.8); }  
+
     .btn{  
       cursor:pointer;  
       background: rgba(77,163,255,.14);  
@@ -102,9 +118,9 @@
       color: var(--accent);  
       padding: 10px 12px;  
       border-radius: 10px;  
-      font-weight: 800;  
+      font-weight: 900;  
       font-size: 13px;  
-      flex: 1 1 auto;  
+      flex: 0 0 auto;  
       min-width: 190px;  
       user-select:none;  
     }  
@@ -133,3 +149,237 @@
 
     thead th{  
       background: rgba(18,27,47,.97);  
+      border-bottom:1px solid var(--line);  
+      text-align:left;  
+      padding: 10px 8px;  
+      font-size: 13px;  
+      position: sticky;  
+      top: 0;  
+      z-index: 1;  
+    }  
+
+    td{  
+      padding: 10px 8px;  
+      border-bottom:1px solid var(--line);  
+      font-size: 13px;  
+      vertical-align:middle;  
+      text-align:left;  
+    }  
+
+    .stateWrap{  
+      display:flex;  
+      flex-direction:column;  
+      gap:8px;  
+      min-width: 190px;  
+    }  
+
+    .radioRow{  
+      display:flex;  
+      align-items:center;  
+      gap:10px;  
+      flex-wrap:wrap;  
+      font-weight:800;  
+      white-space:nowrap;  
+    }  
+
+    .radioRow label{  
+      display:flex;  
+      align-items:center;  
+      gap:8px;  
+      cursor:pointer;  
+      color: var(--text);  
+    }  
+
+    .summary{  
+      display:grid;  
+      grid-template-columns: repeat(5, minmax(150px, 1fr));  
+      gap:10px;  
+      margin: 12px 0 2px;  
+    }  
+
+    .stat{  
+      border:1px solid var(--line);  
+      background: rgba(9,14,28,.25);  
+      border-radius: 12px;  
+      padding: 10px 12px;  
+      min-height: 64px;  
+    }  
+
+    .stat .k{  
+      color: var(--muted);  
+      font-size: 12px;  
+    }  
+    .stat .v{  
+      font-size: 16px;  
+      font-weight: 1000;  
+      margin-top: 4px;  
+      word-break: break-word;  
+    }  
+
+    .footnote{  
+      color: var(--muted);  
+      font-size: 12px;  
+      text-align:center;  
+      margin-top:14px;  
+    }  
+
+    /* Responsive: tablets */  
+    @media (max-width: 900px){  
+      .summary{ grid-template-columns: repeat(2, minmax(150px, 1fr)); }  
+      header h1{ font-size: 17px; }  
+      .btn{ min-width: 140px; }  
+    }  
+
+    /* Responsive: mobile table as cards */  
+    @media (max-width: 560px){  
+      thead{ display:none; }  
+      table, tbody, tr, td{  
+        display:block;  
+        width:100%;  
+      }  
+
+      tr{  
+        border-bottom: 1px solid var(--line);  
+        padding: 10px 0;  
+      }  
+
+      td{  
+        border-bottom:none;  
+        padding: 6px 0;  
+      }  
+
+      td[data-label]::before{  
+        content: attr(data-label);  
+        display:block;  
+        color: var(--muted);  
+        font-weight: 900;  
+        font-size: 12px;  
+        margin-bottom: 6px;  
+      }  
+
+      .stateWrap{ min-width: 0; }  
+      .radioRow{ white-space: normal; }  
+    }  
+  </style>  
+</head>  
+
+<body>  
+  <div class="wrap">  
+    <header>  
+      <h1>Listado de recolección de basura — Compañía Tañarandy — Año 2026</h1>  
+      <p>Monto mensual por usuario: <b>10.000 GS</b>. Los totales se calculan automáticamente.</p>  
+    </header>  
+
+    <div id="appMount"></div>  
+
+    <div class="footnote">  
+      Se guarda en tu navegador (localStorage). Si borrás datos del navegador, se pierde el registro.  
+    </div>  
+  </div>  
+
+  <script>  
+    const MONTO_MENSUAL = 10000; // GS  
+    const MESES = [  
+      "Enero","Febrero","Marzo","Abril","Mayo","Junio",  
+      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"  
+    ];  
+
+    const STORAGE_KEY = "basura_tanarandy_2026_v2";  
+
+    const $ = (sel, root=document) => root.querySelector(sel);  
+
+    // Estado base:  
+    // {  
+    //   users: ["Nombre1", "Nombre2"],  
+    //   months: {  
+    //     "Enero": { "Nombre1": "PAGADO|IMPAGO|ADELANTO|..." }  
+    //   }  
+    // }  
+    const defaultState = () => ({  
+      users: [],  
+      months: {}  
+    });  
+
+    function loadState(){  
+      try{  
+        const raw = localStorage.getItem(STORAGE_KEY);  
+        if(!raw) return defaultState();  
+        const parsed = JSON.parse(raw);  
+        // sane defaults  
+        parsed.users ||= [];  
+        parsed.months ||= {};  
+        return parsed;  
+      }catch{  
+        return defaultState();  
+      }  
+    }  
+
+    function saveState(state){  
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));  
+    }  
+
+    function fmtGS(n){  
+      try{  
+        return new Intl.NumberFormat("es-PY").format(n) + " GS";  
+      }catch{  
+        return n + " GS";  
+      }  
+    }  
+
+    // Estados: ajustá si querés (pero mantenemos 3 opciones para que no sea complejo)  
+    // - "PAGADO": paga completa  
+    // - "PENDIENTE": no pagó  
+    // - "EXENTO": no aplica (ej. no corresponde)  
+    const ESTADOS = [  
+      { key: "PAGADO", label: "Pagado" },  
+      { key: "PENDIENTE", label: "Pendiente" },  
+      { key: "EXENTO", label: "Exento" }  
+    ];  
+
+    function getMonthState(state, month){  
+      state.months[month] ||= {};  
+      return state.months[month];  
+    }  
+
+    function ensureUsers(state){  
+      // Si no hay usuarios, creamos 2 ejemplos para que puedas ver  
+      // (vos los borrás o editás)  
+      if(state.users.length === 0){  
+        state.users = ["Usuario 1", "Usuario 2"];  
+      }  
+    }  
+
+    function calcularTotales(state, month){  
+      const m = getMonthState(state, month);  
+      let pagados = 0;  
+      let pendientes = 0;  
+      let exentos = 0;  
+
+      for(const u of state.users){  
+        const st = m[u] || "PENDIENTE";  
+        if(st === "PAGADO") pagados++;  
+        else if(st === "EXENTO") exentos++;  
+        else pendientes++;  
+      }  
+
+      const totalRecaudado = pagados * MONTO_MENSUAL;  
+      const totalPendiente = pendientes * MONTO_MENSUAL;  
+
+      return { pagados, pendientes, exentos, totalRecaudado, totalPendiente };  
+    }  
+
+    function render(state){  
+      ensureUsers(state);  
+      saveState(state);  
+
+      const mount = $("#appMount");  
+      mount.innerHTML = "";  
+
+      // Header de resumen general  
+      const resumenTotal = { pagados:0, pendientes:0, exentos:0 };  
+      let totalRecaudadoAnual = 0;  
+      let totalPendienteAnual = 0;  
+
+      // Panel por mes  
+      for(const month of MESES){  
+        const totals = calcular
